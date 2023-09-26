@@ -35,7 +35,7 @@ class RuneProtocol:
 
             return symbol
 
-    def encode_varint(self, i: int) -> bytes:
+    """def encode_varint(self, i: int) -> bytes:
         if i < 0:
             raise ValueError("Varints cannot be negative")
 
@@ -48,12 +48,32 @@ class RuneProtocol:
         elif i < (1 << 21):  # 21 bits, 3 leading zero bits
             return bytes([0b11000000 | (i & 0x7F), ((i >> 7) & 0x7F), (i >> 14)])
 
-        # ... and so on for larger numbers
+        # ... and so on for larger numbers TODO
 
         else:
-            raise ValueError("Integer too large to encode as varint")
+            print(i)
+            raise ValueError("Integer too large to encode as varint")"""
 
-    def decode_varint(self, data: bytes) -> int:
+    def encode_varint(self, i: int) -> bytes:
+        if i < 0:
+            raise ValueError("Varints cannot be negative")
+
+        # Initialize an empty bytes object to hold the varint
+        encoded = bytes()
+
+        while i > 127:  # 127 is the maximum value that can be encoded in 7 bits
+            # Encode the lowest 7 bits of i, and set the continuation bit to 1
+            encoded += bytes([(i & 0x7F) | 0x80])
+
+            # Right shift i by 7 bits to remove the bits we've just encoded
+            i >>= 7
+
+        # Encode the last 7 bits of i without the continuation bit
+        encoded += bytes([i])
+
+        return encoded
+
+    """def decode_varint(self, data: bytes) -> int:
         if not data:
             raise ValueError("Data cannot be empty")
         first_byte = data[0]
@@ -67,7 +87,24 @@ class RuneProtocol:
             if len(data) < 3:
                 raise ValueError("Insufficient data")
             return ((first_byte & 0b00011111) << 16) | (data[1] << 8) | data[2]
-        # ... and so on for larger encoded varints
+        # ... and so on for larger encoded varints TODO
+        """
+    def decode_varint(self, encoded: bytes) -> int:
+        decoded = 0  # Initialize the decoded integer
+        shift = 0   # Initialize the bit shift counter
+
+        for byte in encoded:
+            # Extract the 7 least significant bits and accumulate in decoded
+            decoded |= (byte & 0x7F) << shift
+
+            # If the most significant bit is 0, this is the last byte
+            if not (byte & 0x80):
+                break
+
+            # Prepare for the next byte
+            shift += 7
+
+        return decoded
 
 
     def select_utxo(self):
@@ -75,8 +112,17 @@ class RuneProtocol:
         # You might want to filter this list to suit your needs, e.g., by confirmation status or by amount.
         available_utxos = self.proxy.listunspent()
 
+        """try:
+            unspent_list = self.proxy.listunspent()
+            for unspent in unspent_list:
+                try:
+                    unspent['address'] = CBitcoinAddress(unspent['address'])
+                except CBitcoinAddressError:
+                    unspent['address'] = 'Unrecognized Address Format'
+        except Exception as e:
+            print(f"An error occurred: {e}")
         if not available_utxos:
-            raise ValueError("No available UTXOs")
+            raise ValueError("No available UTXOs")"""
 
         # A simple selection strategy, selecting the first available UTXO
         # Replace with more sophisticated logic as per your requirements.
@@ -88,9 +134,11 @@ class RuneProtocol:
     def create_op_return_output(self, data: bytes) -> CScript:
         return CScript([OP_RETURN, data])
 
-    def issue_rune(self, symbol: str, decimals: int, amount: int, destination_address: str, fee_per_byte: int, live: bool):
+    def issue_rune(self, symbol: str, decimals: int, amount: int, destination_address: str, change_address: str, fee_per_byte: int, live: bool):
         symbol_int = self.symbol_to_int(symbol)
         print(symbol_int)
+
+        # TODO transfer output stuff
         issuance_data = b'R' + self.encode_varint(symbol_int) + self.encode_varint(decimals)
         op_return_output = self.create_op_return_output(issuance_data)
 
@@ -150,7 +198,7 @@ class RuneProtocol:
 
 def main():
     parser = argparse.ArgumentParser(description='Runes Command Line Interface.')
-    parser.add_argument('--conf', type=str, default=None, help='Path to the bitcoin configuration file.')
+    #parser.add_argument('--conf', type=str, default=None, help='Path to the bitcoin configuration file.')
 
     subparsers = parser.add_subparsers(dest='command', help='Subcommand to run')
 
@@ -170,6 +218,12 @@ def main():
     symbol_parser.add_argument('action', type=str, choices=['encode', 'decode'], help='Whether to encode or decode the symbol.')
     symbol_parser.add_argument('value', type=str, help='The symbol or integer to encode/decode.')
 
+    # Varint Subparser
+    varint_parser = subparsers.add_parser('varint', help='Varint operations.')
+    varint_parser.add_argument('operation', choices=['encode', 'decode'], help='The varint operation to perform.')
+    varint_parser.add_argument('value', type=str, help='The value to operate on.')
+
+
     args = parser.parse_args()
 
     obj = RuneProtocol(conf_file=args.conf)  # Assume that YourClass accepts conf_file parameter
@@ -183,6 +237,16 @@ def main():
             print(obj.symbol_to_int(args.value))
         elif args.action == 'decode':
             print(obj.int_to_symbol(int(args.value)))  # Assume that int_to_symbol is implemented to decode an integer to a symbol
+
+    if args.command == 'varint':
+        if args.operation == 'encode':
+            number = int(args.value)  # Convert string to int for encoding
+            encoded = obj.encode_varint(number)  # Replace with your actual encoding logic
+            print(encoded)
+
+        elif args.operation == 'decode':
+            decoded = obj.decode_varint(args.value)  # Replace with your actual decoding logic
+            print(decoded)
 
 if __name__ == '__main__':
     main()
