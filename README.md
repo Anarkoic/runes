@@ -34,6 +34,10 @@ python3 runes.py symbol decode 7012798
 
 ### Install
 
+#### Requirements
+
+Requires running bitcoin full node
+
 Optional, set up venv, e.g.
 ```sh
 python3 -m venv venv
@@ -45,8 +49,15 @@ Install packages
 pip install -r requirements.txt
 ```
 
+### Run
 
-### Run Unit Tests
+```sh
+python3 runes.py -h
+```
+
+to see information on what arguments (information) to include when running it
+
+### If you want to... Run Unit Tests
 
 ```sh
 python -m unittest test_runes.py

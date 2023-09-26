@@ -150,6 +150,7 @@ class RuneProtocol:
         # Selecting UTXO
         #utxo = self.select_utxo()
 
+        # TODO remove the hard-coding, e.g. if not getting unspent list, at least pass txid on commandline and look up txn details via RPC
         utxo_tx_id = "25c796a6c8aed0ba4d3de8f434168d62e7fb1c988e141a9bca914ed7571e2c32" #lx(utxo['txid'])  # Transaction id of the UTXO to spend
         vout = 0 #utxo['vout']
         input_value = 0.00100000 #utxo['amount']  # value of the selected UTXO in BTC
