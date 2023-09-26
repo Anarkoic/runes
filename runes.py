@@ -7,10 +7,39 @@ class RuneProtocol:
         self.proxy = bitcoin.rpc.Proxy()
     
     def encode_varint(self, i: int) -> bytes:
-        # TODO: Implement varint encoding logic here
+        if i < 0:
+            raise ValueError("Varints cannot be negative")
         
-    def decode_varint(self, data: bytes) -> int:
-        # TODO: Implement varint decoding logic here
+        elif i < (1 << 7):  # 7 bits, 1 leading zero bit
+            return bytes([i])
+        
+        elif i < (1 << 14):  # 14 bits, 2 leading zero bits
+            return bytes([0b10000000 | (i & 0x7F), (i >> 7)])
+        
+        elif i < (1 << 21):  # 21 bits, 3 leading zero bits
+            return bytes([0b11000000 | (i & 0x7F), ((i >> 7) & 0x7F), (i >> 14)])
+        
+        # ... and so on for larger numbers
+        
+        else:
+            raise ValueError("Integer too large to encode as varint")
+        
+def decode_varint(data: bytes) -> int:
+    if not data:
+        raise ValueError("Data cannot be empty")
+    first_byte = data[0]
+    if first_byte < 0b11000000:
+        return first_byte
+    elif first_byte < 0b11100000:
+        if len(data) < 2:
+            raise ValueError("Insufficient data")
+        return ((first_byte & 0b00111111) << 8) | data[1]
+    elif first_byte < 0b11110000:
+        if len(data) < 3:
+            raise ValueError("Insufficient data")
+        return ((first_byte & 0b00011111) << 16) | (data[1] << 8) | data[2]
+    # ... and so on for larger encoded varints
+
     
     def create_op_return_output(self, data: bytes) -> CScript:
         return CScript([OP_RETURN, data])
