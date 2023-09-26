@@ -2,6 +2,9 @@
 
 Initial experiment towards Python implementation to at least support issuance.
 
+### WARNING: Experimental
+
+This is experimental code. If you're going to use it on mainnet, create a special wallet for it, and don't fund that wallet with funds you aren't willing to potentially lose.
 
 ### Install
 
