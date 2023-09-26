@@ -1,3 +1,5 @@
+import argparse
+import json
 import bitcoin.rpc
 from bitcoin.core import lx, COIN
 from bitcoin.core.script import OP_RETURN, CScript
@@ -54,7 +56,7 @@ class RuneProtocol:
     def create_op_return_output(self, data: bytes) -> CScript:
         return CScript([OP_RETURN, data])
 
-    def issue_rune(self, symbol: str, decimals: int, amount: int):
+    def issue_rune(self, symbol: str, decimals: int, amount: int, live: bool):
         symbol_int = self.symbol_to_int(symbol)
         issuance_data = b'R' + self.encode_varint(symbol_int) + self.encode_varint(decimals)
         op_return_output = self.create_op_return_output(issuance_data)
@@ -80,14 +82,28 @@ class RuneProtocol:
         # Broadcasting the transaction
         txid = self.proxy.sendrawtransaction(signed_tx['hex'])
 
-        return txid
-
+        if live:
+            # Broadcasting the transaction if live
+            txid = self.proxy.sendrawtransaction(signed_tx['hex'])
+            return txid
+        else:
+            # Output transaction info as JSON if not live
+            print(json.dumps(signed_tx._asdict(), indent=4))
+            return None
 
     def transfer_rune(self, rune_id: int, output_index: int, amount: int):
         # TODO: Implement Rune Transfer logic here
         1
 
-# Example of issuing a rune
+# Command Line Arguments Handling
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Issue Rune via Command Line.')
+    parser.add_argument('symbol', type=str, help='Symbol of the Rune to be issued.')
+    parser.add_argument('decimals', type=int, help='Number of decimals of the Rune.')
+    parser.add_argument('amount', type=int, help='Amount of Rune to be issued.')
+    parser.add_argument('--live', action='store_true', help='If provided, will broadcast the transaction to the network.')
+
+    args = parser.parse_args()
+
     rune_protocol = RuneProtocol()
-    rune_protocol.issue_rune('ABC', 2, 100)
+    rune_protocol.issue_rune(args.symbol, args.decimals, args.amount, args.live)
