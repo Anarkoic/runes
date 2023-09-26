@@ -60,11 +60,28 @@ class RuneProtocol:
         op_return_output = self.create_op_return_output(issuance_data)
 
 
-        tx = self.proxy.create_transaction({lx('utxo_tx_id'): (0, amount*COIN)}, {op_return_output: 0})
+        # Constructing inputs
+        # Replace with actual logic to select appropriate UTXOs
+        utxo_tx_id = lx('utxo_tx_id')  # Transaction id of the UTXO to spend
+        vout = 0  # Output index of the UTXO to spend
+        inputs = [{'txid': utxo_tx_id, 'vout': vout}]
 
-        # sign and send the transaction
-        signed_tx = self.proxy.sign_transaction(tx)
-        self.proxy.sendrawtransaction(signed_tx)
+        # Constructing outputs
+        # Replace with actual logic to calculate output amounts and destinations
+        destination_address = CBitcoinAddress('destination_address')  # Replace with the actual destination address
+        outputs = {destination_address: amount*COIN, op_return_output: 0}
+
+        # Creating raw transaction
+        raw_tx = self.proxy.createrawtransaction(inputs, outputs)
+
+        # Signing the transaction
+        signed_tx = self.proxy.signrawtransactionwithwallet(raw_tx)
+
+        # Broadcasting the transaction
+        txid = self.proxy.sendrawtransaction(signed_tx['hex'])
+
+        return txid
+
 
     def transfer_rune(self, rune_id: int, output_index: int, amount: int):
         # TODO: Implement Rune Transfer logic here
