@@ -7,12 +7,42 @@ from bitcoin.wallet import CBitcoinAddress
 from bitcoin import bech32
 
 class RuneProtocol:
+    BASE_OFFSET = 1  # set to 1 for 1-26 numbering, and 0 for 0-25 numbering
+
     def __init__(self, conf_file=None):
         # Here you can create a Proxy object with the given configuration file.
         # The exact parameter or method to use will depend on how the Proxy class is implemented.
         self.proxy = bitcoin.rpc.Proxy(btc_conf_file=conf_file)
 
     def symbol_to_int(self, symbol: str) -> int:
+        if not all(c.isalpha() and c.isupper() for c in symbol):
+            raise ValueError(f"Invalid symbol: {symbol}. Only uppercase letters A-Z are allowed")
+
+        value = 0
+        for i, c in enumerate(reversed(symbol)):
+            value += (ord(c) - ord('A') + self.BASE_OFFSET) * (26 ** i)
+        return value
+
+    def int_to_symbol(self, num: int) -> str:
+        if num < 0:
+            raise ValueError("Input must be a non-negative integer")
+
+        alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        symbol = ''
+
+        if self.BASE_OFFSET == 1 and num == 0:  # In 1-26 numbering, 0 is invalid
+            raise ValueError("Input must be a positive integer when using 1-26 numbering")
+
+        if self.BASE_OFFSET == 0 and num == 0:
+            return alphabet[0]  # return 'A' if num is 0
+
+        while num > 0:
+            num, remainder = divmod(num - self.BASE_OFFSET, 26)
+            symbol = alphabet[remainder] + symbol  # prepend the character corresponding to the remainder
+
+        return symbol
+
+    """def symbol_to_int(self, symbol: str) -> int:
         if not all(c.isalpha() and c.isupper() for c in symbol):
             raise ValueError(f"Invalid symbol: {symbol}. Only uppercase letters A-Z are allowed")
 
@@ -35,7 +65,7 @@ class RuneProtocol:
                 num, remainder = divmod(num, 26)
                 symbol = alphabet[remainder] + symbol  # prepend the character corresponding to the remainder
 
-            return symbol
+            return symbol"""
 
     """def encode_varint(self, i: int) -> bytes:
         if i < 0:
