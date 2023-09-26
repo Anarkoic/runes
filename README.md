@@ -34,11 +34,14 @@ python3 runes.py symbol decode 7012798
 
 ### Install
 
-(you can skip first 2 lines if you want, they just set up an environment; they are for linux)
-
+Optional, set up venv, e.g.
 ```sh
 python3 -m venv venv
 . ./venv/bin/activate
+```
+
+Install packages
+```sh
 pip install -r requirements.txt
 ```
 
