@@ -53,19 +53,39 @@ class RuneProtocol:
         # ... and so on for larger encoded varints
 
 
+    def select_utxo(self):
+        # listunspent will return a list of UTXOs available in the wallet.
+        # You might want to filter this list to suit your needs, e.g., by confirmation status or by amount.
+        available_utxos = self.proxy.listunspent()
+
+        if not available_utxos:
+            raise ValueError("No available UTXOs")
+
+        # A simple selection strategy, selecting the first available UTXO
+        # Replace with more sophisticated logic as per your requirements.
+        selected_utxo = available_utxos[0]
+
+        return selected_utxo
+
+
     def create_op_return_output(self, data: bytes) -> CScript:
         return CScript([OP_RETURN, data])
 
-    def issue_rune(self, symbol: str, decimals: int, amount: int, destination_address: str, live: bool):
+    def issue_rune(self, symbol: str, decimals: int, amount: int, destination_address: str, fee_per_byte: int, live: bool):
         symbol_int = self.symbol_to_int(symbol)
+        print(symbol_int)
         issuance_data = b'R' + self.encode_varint(symbol_int) + self.encode_varint(decimals)
         op_return_output = self.create_op_return_output(issuance_data)
 
 
         # Constructing inputs
         # Replace with actual logic to select appropriate UTXOs
-        utxo_tx_id = lx('utxo_tx_id')  # Transaction id of the UTXO to spend
-        vout = 0  # Output index of the UTXO to spend
+        # Selecting UTXO
+        utxo = self.select_utxo()
+
+        utxo_tx_id = lx(utxo['txid'])  # Transaction id of the UTXO to spend
+        vout = utxo['vout']
+        input_value = utxo['amount']  # value of the selected UTXO in BTC
         inputs = [{'txid': utxo_tx_id, 'vout': vout}]
 
         # Constructing outputs
@@ -79,8 +99,23 @@ class RuneProtocol:
         # Signing the transaction
         signed_tx = self.proxy.signrawtransactionwithwallet(raw_tx)
 
-        # Broadcasting the transaction
-        txid = self.proxy.sendrawtransaction(signed_tx['hex'])
+        # Getting the size of the signed transaction
+        signed_tx_size = len(signed_tx['hex']) // 2  # serialized tx is in hex, so divided by 2 to get bytes
+
+        fee = int(signed_tx_size * fee_per_byte)
+
+        # Calculating the change
+        change = (input_value * COIN) - (amount * COIN + fee)
+
+        # if change is negative, inputs are not sufficient to cover outputs and fees
+        if change < 0:
+            raise ValueError('Insufficient funds to cover the transaction and fees')
+
+        # If there is any change, you need to recreate, resign the transaction with the change output and adjusted fee.
+        if change > 0:
+            outputs[change_address] = change  # Assigning leftover to change address
+            raw_tx = self.proxy.createrawtransaction(inputs, outputs)  # Creating the transaction again
+            signed_tx = self.proxy.signrawtransactionwithwallet(raw_tx)  # Signing the transaction again
 
         if live:
             # Broadcasting the transaction if live
@@ -102,9 +137,13 @@ if __name__ == '__main__':
     parser.add_argument('decimals', type=int, help='Number of decimals of the Rune.')
     parser.add_argument('amount', type=int, help='Amount of Rune to be issued.')
     parser.add_argument('destination_address', type=str, help='Destination address for the transaction.')
+    parser.add_argument('fee', type=int, help='Transaction fee in satoshis per byte.')
     parser.add_argument('--live', action='store_true', help='If provided, will broadcast the transaction to the network.')
 
     args = parser.parse_args()
 
+    if args.fee <= 0:
+        parser.error('fee must be a positive integer.')
+
     rune_protocol = RuneProtocol()
-    rune_protocol.issue_rune(args.symbol, args.decimals, args.amount, args.destination_address, args.live)
+    rune_protocol.issue_rune(args.symbol, args.decimals, args.amount, args.destination_address, args.fee, args.live)
