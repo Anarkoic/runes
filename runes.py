@@ -14,8 +14,9 @@ class RuneProtocol:
 
         value = 0
         for i, c in enumerate(reversed(symbol)):
-            value += (ord(c) - ord('A') + 1) * (26 ** i)
+            value += (ord(c) - ord('A')) * (26 ** i)  # 'A' is 0, 'B' is 1, ..., 'Z' is 25
         return value
+
 
 
     def encode_varint(self, i: int) -> bytes:
