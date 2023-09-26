@@ -1,3 +1,10 @@
+### Install
+
+```sh
+pip install -r requirements.txt
+```
+
+
 ### Overview
 Rune balances are held by UTXOs. A UTXO can contain any amount of any number of runes.
 
