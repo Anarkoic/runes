@@ -4,6 +4,10 @@
 pip install -r requirements.txt
 ```
 
+## Runes by Casey
+
+### [Runes Blog Post by Casey](https://rodarmor.com/blog/runes/)
+
 
 ### Overview
 Rune balances are held by UTXOs. A UTXO can contain any amount of any number of runes.
