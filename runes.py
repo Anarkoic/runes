@@ -5,8 +5,10 @@ from bitcoin.core import lx, COIN
 from bitcoin.core.script import OP_RETURN, CScript
 
 class RuneProtocol:
-    def __init__(self):
-        self.proxy = bitcoin.rpc.Proxy()
+    def __init__(self, conf_file='bitcoin.conf'):
+        # Here you can create a Proxy object with the given configuration file.
+        # The exact parameter or method to use will depend on how the Proxy class is implemented.
+        self.proxy = bitcoin.rpc.Proxy(btc_conf_file=conf_file)
 
     def symbol_to_int(self, symbol: str) -> int:
         if not all(c.isalpha() and c.isupper() for c in symbol):
@@ -17,7 +19,21 @@ class RuneProtocol:
             value += (ord(c) - ord('A')) * (26 ** i)  # 'A' is 0, 'B' is 1, ..., 'Z' is 25
         return value
 
+    def int_to_symbol(self, num: int) -> str:
+            if num < 0:
+                raise ValueError("Input must be a non-negative integer")
 
+            alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            symbol = ''
+
+            if num == 0:
+                return alphabet[0]  # return 'A' if num is 0
+
+            while num > 0:
+                num, remainder = divmod(num, 26)
+                symbol = alphabet[remainder] + symbol  # prepend the character corresponding to the remainder
+
+            return symbol
 
     def encode_varint(self, i: int) -> bytes:
         if i < 0:
@@ -131,20 +147,42 @@ class RuneProtocol:
         # TODO: Implement Rune Transfer logic here
         1
 
-# Command Line Arguments Handling, e.g. 'ABC', 2, 100
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Issue Rune via Command Line.')
-    parser.add_argument('symbol', type=str, help='Symbol of the Rune to be issued.')
-    parser.add_argument('decimals', type=int, help='Number of decimals of the Rune.')
-    parser.add_argument('amount', type=int, help='Amount of Rune to be issued.')
-    parser.add_argument('destination_address', type=str, help='Destination address for the transaction.')
-    parser.add_argument('fee', type=int, help='Transaction fee in satoshis per byte.')
-    parser.add_argument('--live', action='store_true', help='If provided, will broadcast the transaction to the network.')
+
+def main():
+    parser = argparse.ArgumentParser(description='Runes Command Line Interface.')
+    parser.add_argument('--conf', type=str, default=None, help='Path to the bitcoin configuration file.')
+
+    subparsers = parser.add_subparsers(dest='command', help='Subcommand to run')
+
+    # Subparser for the 'issue' command
+    issue_parser = subparsers.add_parser('issue', help='Issue a new Rune.')
+    issue_parser.add_argument('symbol', type=str, help='Symbol of the Rune to be issued.')
+    issue_parser.add_argument('decimals', type=int, help='Number of decimals of the Rune.')
+    issue_parser.add_argument('amount', type=int, help='Amount of Rune to be issued.')
+    issue_parser.add_argument('destination_address', type=str, help='Destination address for the Rune.')
+    issue_parser.add_argument('change_address', type=str, help='Change address for the transaction.')
+    issue_parser.add_argument('fee', type=int, help='Transaction fee in satoshis per byte.')
+    #issue_parser.add_argument('--conf', type=str, default='bitcoin.conf', help='Path to the bitcoin configuration file.')
+    issue_parser.add_argument('--live', action='store_true', help='If provided, will broadcast the transaction to the network.')
+
+    # Subparser for the 'symbol' command
+    symbol_parser = subparsers.add_parser('symbol', help='Encode/Decode a symbol.')
+    symbol_parser.add_argument('action', type=str, choices=['encode', 'decode'], help='Whether to encode or decode the symbol.')
+    symbol_parser.add_argument('value', type=str, help='The symbol or integer to encode/decode.')
 
     args = parser.parse_args()
 
-    if args.fee <= 0:
-        parser.error('fee must be a positive integer.')
+    obj = RuneProtocol(conf_file=args.conf)  # Assume that YourClass accepts conf_file parameter
 
-    rune_protocol = RuneProtocol()
-    rune_protocol.issue_rune(args.symbol, args.decimals, args.amount, args.destination_address, args.fee, args.live)
+    if args.command == 'issue':
+        if args.fee <= 0:
+            parser.error('fee must be a positive integer.')
+        obj.issue_rune(args.symbol, args.decimals, args.amount, args.destination_address, args.change_address, args.fee, args.live)
+    elif args.command == 'symbol':
+        if args.action == 'encode':
+            print(obj.symbol_to_int(args.value))
+        elif args.action == 'decode':
+            print(obj.int_to_symbol(int(args.value)))  # Assume that int_to_symbol is implemented to decode an integer to a symbol
+
+if __name__ == '__main__':
+    main()

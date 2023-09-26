@@ -1,20 +1,54 @@
 ### What Is This
 
-Initial experiment towards Python implementation to at least support issuance.
+Initial experiment towards Python implementation to at least support Rune issuance.
 
-### WARNING: Experimental
+### WARNING: Experimental, Unfinished
 
 This is experimental code. If you're going to use it on mainnet, create a special wallet for it, and don't fund that wallet with funds you aren't willing to potentially lose.
 
+It is not in release form yet, so don't try to do an issue command yet.
+
+
+### Author / Support
+
+By [Anarkoic](https://www.anarkoic.com/)
+
+Bitcoin Donation address: bc1qejvzn23pmgc58ue2me4anusm7vw9r5nrv9h7jz
+
+[GPU Ordinals collection on ME](https://magiceden.io/ordinals/marketplace/gpu)
+
+[Discord](discord.gg/TGddbKbEp4)
+
+[Twitter](https://twitter.com/Anarkoic)
+
+
+### Usage
+
+Decode/encode symbol:
+
+python3 runes.py symbol encode PIZZA
+
+python3 runes.py symbol decode 7012798
+
+
+
 ### Install
 
+(you can skip first 2 lines if you want, they just set up an environment; they are for linux)
+
 ```sh
+python3 -m venv venv
+. ./venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Runes by Casey
+## Runes by Casey; References
 
 ### [Runes Blog Post by Casey](https://rodarmor.com/blog/runes/)
+
+[Psifour transaction pastebin decoded, which he says is not valid](https://gist.github.com/devords/da8b24932d49bcc2c4c36833b995eaf2)
+
+[ordinals wallet attempted Rune issuance[(https://mempool.space/tx/1aa98283f61cea9125aea58441067baca2533e2bbf8218b5e4f9ef7b8c0d8c30)
 
 
 ### Overview
