@@ -5,7 +5,7 @@ from bitcoin.core import lx, COIN
 from bitcoin.core.script import OP_RETURN, CScript
 
 class RuneProtocol:
-    def __init__(self, conf_file='bitcoin.conf'):
+    def __init__(self, conf_file=None):
         # Here you can create a Proxy object with the given configuration file.
         # The exact parameter or method to use will depend on how the Proxy class is implemented.
         self.proxy = bitcoin.rpc.Proxy(btc_conf_file=conf_file)
