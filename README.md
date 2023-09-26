@@ -17,7 +17,7 @@ Bitcoin Donation address: bc1qejvzn23pmgc58ue2me4anusm7vw9r5nrv9h7jz
 
 [GPU Ordinals collection on ME](https://magiceden.io/ordinals/marketplace/gpu)
 
-[Discord](discord.gg/TGddbKbEp4)
+[Discord](https://discord.gg/TGddbKbEp4)
 
 [Twitter](https://twitter.com/Anarkoic)
 
@@ -44,6 +44,14 @@ Install packages
 ```sh
 pip install -r requirements.txt
 ```
+
+
+### Run Unit Tests
+
+```sh
+python -m unittest test_runes.py
+```
+
 
 ## Runes by Casey; References
 

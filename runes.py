@@ -3,6 +3,8 @@ import json
 import bitcoin.rpc
 from bitcoin.core import lx, COIN
 from bitcoin.core.script import OP_RETURN, CScript
+from bitcoin.wallet import CBitcoinAddress
+from bitcoin import bech32
 
 class RuneProtocol:
     def __init__(self, conf_file=None):
@@ -146,20 +148,26 @@ class RuneProtocol:
         # Constructing inputs
         # Replace with actual logic to select appropriate UTXOs
         # Selecting UTXO
-        utxo = self.select_utxo()
+        #utxo = self.select_utxo()
 
-        utxo_tx_id = lx(utxo['txid'])  # Transaction id of the UTXO to spend
-        vout = utxo['vout']
-        input_value = utxo['amount']  # value of the selected UTXO in BTC
+        utxo_tx_id = "25c796a6c8aed0ba4d3de8f434168d62e7fb1c988e141a9bca914ed7571e2c32" #lx(utxo['txid'])  # Transaction id of the UTXO to spend
+        vout = 0 #utxo['vout']
+        input_value = 0.00100000 #utxo['amount']  # value of the selected UTXO in BTC
         inputs = [{'txid': utxo_tx_id, 'vout': vout}]
 
         # Constructing outputs
         # Replace with actual logic to calculate output amounts and destinations
-        destination_address = CBitcoinAddress(destination_address)
-        outputs = {destination_address: amount*COIN, op_return_output: 0}
+        destination_address = str(destination_address) #CBitcoinAddress(destination_address)
+        print(amount*COIN)
+        print(COIN)
+        outputs = {destination_address: amount, str(op_return_output): 0}
 
         # Creating raw transaction
-        raw_tx = self.proxy.createrawtransaction(inputs, outputs)
+        print("inputs:")
+        print(inputs)
+        print("outputs")
+        print(outputs)
+        raw_tx = self.proxy._call('createrawtransaction', inputs, outputs)
 
         # Signing the transaction
         signed_tx = self.proxy.signrawtransactionwithwallet(raw_tx)
@@ -226,7 +234,7 @@ def main():
 
     args = parser.parse_args()
 
-    obj = RuneProtocol(conf_file=args.conf)  # Assume that YourClass accepts conf_file parameter
+    obj = RuneProtocol() #conf_file=args.conf)  # Assume that YourClass accepts conf_file parameter
 
     if args.command == 'issue':
         if args.fee <= 0:
