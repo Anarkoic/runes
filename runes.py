@@ -56,7 +56,7 @@ class RuneProtocol:
     def create_op_return_output(self, data: bytes) -> CScript:
         return CScript([OP_RETURN, data])
 
-    def issue_rune(self, symbol: str, decimals: int, amount: int, live: bool):
+    def issue_rune(self, symbol: str, decimals: int, amount: int, destination_address: str, live: bool):
         symbol_int = self.symbol_to_int(symbol)
         issuance_data = b'R' + self.encode_varint(symbol_int) + self.encode_varint(decimals)
         op_return_output = self.create_op_return_output(issuance_data)
@@ -70,7 +70,7 @@ class RuneProtocol:
 
         # Constructing outputs
         # Replace with actual logic to calculate output amounts and destinations
-        destination_address = CBitcoinAddress('destination_address')  # Replace with the actual destination address
+        destination_address = CBitcoinAddress(destination_address)
         outputs = {destination_address: amount*COIN, op_return_output: 0}
 
         # Creating raw transaction
@@ -95,15 +95,16 @@ class RuneProtocol:
         # TODO: Implement Rune Transfer logic here
         1
 
-# Command Line Arguments Handling
+# Command Line Arguments Handling, e.g. 'ABC', 2, 100
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Issue Rune via Command Line.')
     parser.add_argument('symbol', type=str, help='Symbol of the Rune to be issued.')
     parser.add_argument('decimals', type=int, help='Number of decimals of the Rune.')
     parser.add_argument('amount', type=int, help='Amount of Rune to be issued.')
+    parser.add_argument('destination_address', type=str, help='Destination address for the transaction.')
     parser.add_argument('--live', action='store_true', help='If provided, will broadcast the transaction to the network.')
 
     args = parser.parse_args()
 
     rune_protocol = RuneProtocol()
-    rune_protocol.issue_rune(args.symbol, args.decimals, args.amount, args.live)
+    rune_protocol.issue_rune(args.symbol, args.decimals, args.amount, args.destination_address, args.live)
