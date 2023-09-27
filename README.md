@@ -44,6 +44,27 @@ python3 -m venv venv
 . ./venv/bin/activate
 ```
 
+Install C libraries
+
+For Ubuntu/Debian-based systems, you can use apt:
+
+sh
+
+sudo apt-get install libsecp256k1-dev
+
+For macOS, you can use brew:
+
+sh
+
+brew install libsecp256k1
+
+For CentOS/RHEL-based systems, you can use yum:
+
+sh
+
+sudo yum install libsecp256k1-devel
+
+
 Install packages
 ```sh
 pip install -r requirements.txt

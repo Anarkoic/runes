@@ -1,1 +1,2 @@
-python-bitcoinlib
+python-bitcointx
+secp256k1

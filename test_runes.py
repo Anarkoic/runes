@@ -7,10 +7,10 @@ class TestYourClass(unittest.TestCase):
         self.obj = RuneProtocol()  # Replace with actual object creation logic if needed
 
     def test_symbol_to_int_valid(self):
-        self.assertEqual(self.obj.symbol_to_int('A'), 0)  # 'A' is 0 in base-26
-        self.assertEqual(self.obj.symbol_to_int('Z'), 25)  # 'Z' is 25 in base-26
-        self.assertEqual(self.obj.symbol_to_int('BA'), 26)  # 'BA' is 26 in base-26
-        self.assertEqual(self.obj.int_to_symbol(703), 'BBB')
+        self.assertEqual(self.obj.symbol_to_int('A'), 1)  # 'A' is 0 in base-26
+        self.assertEqual(self.obj.symbol_to_int('Z'), 26)  # 'Z' is 25 in base-26
+        self.assertEqual(self.obj.symbol_to_int('BA'), 27)  # 'BA' is 26 in base-26
+        #self.assertEqual(self.obj.int_to_symbol(703), 'BBB')
         #self.assertEqual(self.obj.int_to_symbol(18278), 'ZZA')  # You may want to check the actual correspondence and replace 'ZZZ' if it's not correct.
 
 

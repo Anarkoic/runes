@@ -1,10 +1,18 @@
 import argparse
 import json
-import bitcoin.rpc
+"""import bitcoin.rpc
 from bitcoin.core import lx, COIN
+from bitcoin.core import CTransaction, CTxIn, CTxOut, COutPoint
 from bitcoin.core.script import OP_RETURN, CScript
 from bitcoin.wallet import CBitcoinAddress
 from bitcoin import bech32
+"""
+import bitcointx.rpc
+from bitcointx.core import b2lx, COutPoint, CTransaction, CTxIn, CTxOut
+from bitcointx.core.script import CScript, OP_RETURN
+from bitcointx.wallet import CCoinAddress  # Note the change here
+
+COIN = 100_000_000  # Number of Satoshis in one Bitcoin
 
 class RuneProtocol:
     BASE_OFFSET = 1  # set to 1 for 1-26 numbering, and 0 for 0-25 numbering
@@ -12,7 +20,9 @@ class RuneProtocol:
     def __init__(self, conf_file=None):
         # Here you can create a Proxy object with the given configuration file.
         # The exact parameter or method to use will depend on how the Proxy class is implemented.
-        self.proxy = bitcoin.rpc.Proxy(btc_conf_file=conf_file)
+        #self.proxy = bitcointx.rpc.Proxy(btc_conf_file=conf_file)
+        bitcointx.select_chain_params('bitcoin')  # for mainnet
+
 
     def symbol_to_int(self, symbol: str) -> int:
         if not all(c.isalpha() and c.isupper() for c in symbol):
@@ -42,49 +52,7 @@ class RuneProtocol:
 
         return symbol
 
-    """def symbol_to_int(self, symbol: str) -> int:
-        if not all(c.isalpha() and c.isupper() for c in symbol):
-            raise ValueError(f"Invalid symbol: {symbol}. Only uppercase letters A-Z are allowed")
 
-        value = 0
-        for i, c in enumerate(reversed(symbol)):
-            value += (ord(c) - ord('A')) * (26 ** i)  # 'A' is 0, 'B' is 1, ..., 'Z' is 25
-        return value
-
-    def int_to_symbol(self, num: int) -> str:
-            if num < 0:
-                raise ValueError("Input must be a non-negative integer")
-
-            alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            symbol = ''
-
-            if num == 0:
-                return alphabet[0]  # return 'A' if num is 0
-
-            while num > 0:
-                num, remainder = divmod(num, 26)
-                symbol = alphabet[remainder] + symbol  # prepend the character corresponding to the remainder
-
-            return symbol"""
-
-    """def encode_varint(self, i: int) -> bytes:
-        if i < 0:
-            raise ValueError("Varints cannot be negative")
-
-        elif i < (1 << 7):  # 7 bits, 1 leading zero bit
-            return bytes([i])
-
-        elif i < (1 << 14):  # 14 bits, 2 leading zero bits
-            return bytes([0b10000000 | (i & 0x7F), (i >> 7)])
-
-        elif i < (1 << 21):  # 21 bits, 3 leading zero bits
-            return bytes([0b11000000 | (i & 0x7F), ((i >> 7) & 0x7F), (i >> 14)])
-
-        # ... and so on for larger numbers TODO
-
-        else:
-            print(i)
-            raise ValueError("Integer too large to encode as varint")"""
 
     def encode_varint(self, i: int) -> bytes:
         if i < 0:
@@ -105,22 +73,7 @@ class RuneProtocol:
 
         return encoded
 
-    """def decode_varint(self, data: bytes) -> int:
-        if not data:
-            raise ValueError("Data cannot be empty")
-        first_byte = data[0]
-        if first_byte < 0b11000000:
-            return first_byte
-        elif first_byte < 0b11100000:
-            if len(data) < 2:
-                raise ValueError("Insufficient data")
-            return ((first_byte & 0b00111111) << 8) | data[1]
-        elif first_byte < 0b11110000:
-            if len(data) < 3:
-                raise ValueError("Insufficient data")
-            return ((first_byte & 0b00011111) << 16) | (data[1] << 8) | data[2]
-        # ... and so on for larger encoded varints TODO
-        """
+
     def decode_varint(self, encoded: bytes) -> int:
         decoded = 0  # Initialize the decoded integer
         shift = 0   # Initialize the bit shift counter
@@ -140,6 +93,7 @@ class RuneProtocol:
 
 
     def select_utxo(self):
+        # TODO not working yet
         # listunspent will return a list of UTXOs available in the wallet.
         # You might want to filter this list to suit your needs, e.g., by confirmation status or by amount.
         available_utxos = self.proxy.listunspent()
@@ -166,7 +120,37 @@ class RuneProtocol:
     def create_op_return_output(self, data: bytes) -> CScript:
         return CScript([OP_RETURN, data])
 
+
     def issue_rune(self, symbol: str, decimals: int, amount: int, destination_address: str, change_address: str, fee_per_byte: int, live: bool):
+        symbol_int = self.symbol_to_int(symbol)
+        print(symbol_int)
+
+        issuance_data = b'R' + self.encode_varint(symbol_int) + self.encode_varint(decimals)
+        op_return_output = self.create_op_return_output(issuance_data)
+
+        utxo_tx_id = "25c796a6c8aed0ba4d3de8f434168d62e7fb1c988e141a9bca914ed7571e2c32"
+        vout = 0
+        #txins = [CTxIn(COutPoint(b2lx(utxo_tx_id), vout))]
+        #txins = [CTxIn(COutPoint(b2lx(bytes.fromhex(utxo_tx_id)), vout))]
+        txins = [CTxIn(COutPoint(bytes.fromhex(utxo_tx_id)[::-1], vout))]
+
+
+        destination_address_obj = CCoinAddress(destination_address)
+        output_value = int(amount * COIN)
+        destination_output = CTxOut(output_value, destination_address_obj.to_scriptPubKey())
+
+        op_return_output = CTxOut(0, CScript([OP_RETURN, issuance_data]))
+        tx = CTransaction(txins, [destination_output, op_return_output])
+
+        raw_tx_hex = tx.serialize().hex()
+        if live:
+            txid = self.proxy.sendrawtransaction(raw_tx_hex)
+            return txid
+        else:
+            print(tx)
+            return None
+
+    """def issue_rune(self, symbol: str, decimals: int, amount: int, destination_address: str, change_address: str, fee_per_byte: int, live: bool):
         symbol_int = self.symbol_to_int(symbol)
         print(symbol_int)
 
@@ -186,6 +170,38 @@ class RuneProtocol:
         input_value = 0.00100000 #utxo['amount']  # value of the selected UTXO in BTC
         inputs = [{'txid': utxo_tx_id, 'vout': vout}]
 
+
+        # Create a CTxIn object for each input
+        txins = [CTxIn(COutPoint(lx(utxo_tx_id), vout))]
+
+        # Create normal CTxOut objects for regular outputs
+        destination_address_obj = CBitcoinAddress(destination_address)
+        output_value = int(amount * COIN)
+        destination_output = CTxOut(output_value, destination_address_obj.to_scriptPubKey())
+
+        # Create a CTxOut object for the OP_RETURN output
+        op_return_output = CTxOut(0, CScript([OP_RETURN, issuance_data]))
+
+        # Construct the transaction
+        tx = CTransaction(txins, [destination_output, op_return_output])
+
+        # Serialize and send the transaction
+        raw_tx_hex = tx.serialize().hex()
+
+        if live:
+            # Broadcasting the transaction if live
+            #txid = self.proxy.sendrawtransaction(signed_tx['hex'])
+            txid = proxy.sendrawtransaction(raw_tx_hex)
+
+            return txid
+        else:
+            # Output transaction info as JSON if not live
+            print(tx)
+            #print(json.dumps(signed_tx._asdict(), indent=4))
+            return None
+        """
+
+    """
         # Constructing outputs
         # Replace with actual logic to calculate output amounts and destinations
         destination_address = str(destination_address) #CBitcoinAddress(destination_address)
@@ -199,17 +215,21 @@ class RuneProtocol:
         print("outputs")
         print(outputs)
         raw_tx = self.proxy._call('createrawtransaction', inputs, outputs)
+        """
 
+    """
         # Signing the transaction
         signed_tx = self.proxy.signrawtransactionwithwallet(raw_tx)
 
         # Getting the size of the signed transaction
         signed_tx_size = len(signed_tx['hex']) // 2  # serialized tx is in hex, so divided by 2 to get bytes
 
-        fee = int(signed_tx_size * fee_per_byte)
+        fee = int(signed_tx_size * fee_per_byte) # TODO probably convert sats fee to Bitcoin?
 
         # Calculating the change
-        change = (input_value * COIN) - (amount * COIN + fee)
+        change = (input_value * COIN) - (amount * COIN + fee) # TODO probably remove COIN
+        print("change")
+        print(change)
 
         # if change is negative, inputs are not sufficient to cover outputs and fees
         if change < 0:
@@ -229,6 +249,7 @@ class RuneProtocol:
             # Output transaction info as JSON if not live
             print(json.dumps(signed_tx._asdict(), indent=4))
             return None
+        """
 
     def transfer_rune(self, rune_id: int, output_index: int, amount: int):
         # TODO: Implement Rune Transfer logic here
